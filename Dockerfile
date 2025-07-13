@@ -1,5 +1,5 @@
-# 使用官方Node.js 18 Alpine镜像作为基础镜像
-FROM node:18-alpine
+# 使用官方Node.js 20 Alpine镜像作为基础镜像
+FROM node:20-alpine
 
 # 设置工作目录
 WORKDIR /app
@@ -21,8 +21,9 @@ RUN apk add --no-cache \
 # 复制package.json和package-lock.json
 COPY package*.json ./
 
-# 安装依赖
-RUN npm ci --only=production && npm cache clean --force
+# 更新npm到最新版本并安装所有依赖
+RUN npm install -g npm@latest && \
+    npm install
 
 # 复制源代码
 COPY . .
@@ -30,8 +31,10 @@ COPY . .
 # 创建上传目录
 RUN mkdir -p public/uploads
 
-# 构建应用
-RUN npm run build
+# 构建应用并清理开发依赖
+RUN npm run build && \
+    npm ci --omit=dev && \
+    npm cache clean --force
 
 # 创建非root用户
 RUN addgroup -g 1001 -S nodejs && \
