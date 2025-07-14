@@ -1,10 +1,10 @@
-# 使用官方Node.js 20 Alpine镜像作为基础镜像
-FROM node:20-alpine
+# ---- Builder Stage ----
+FROM node:20-alpine AS builder
 
 # 设置工作目录
 WORKDIR /app
 
-# 安装系统依赖
+# 安装系统依赖 (仅构建阶段需要)
 RUN apk add --no-cache \
     build-base \
     cairo-dev \
@@ -15,26 +15,50 @@ RUN apk add --no-cache \
     pixman-dev \
     pangomm-dev \
     libjpeg-turbo-dev \
-    freetype-dev \
+    freetype-dev
+
+# 复制package.json和package-lock.json
+COPY package*.json ./
+
+# 安装所有依赖 (包括devDependencies用于构建)
+RUN npm install
+
+# 复制源代码
+COPY . .
+
+# 构建应用
+RUN npm run build
+
+# ---- Production Stage ----
+FROM node:20-alpine
+
+# 设置工作目录
+WORKDIR /app
+
+# 安装生产环境系统依赖
+RUN apk add --no-cache \
+    cairo \
+    jpeg \
+    pango \
+    giflib \
+    pixman \
+    pangomm \
+    libjpeg-turbo \
+    freetype \
     curl
 
 # 复制package.json和package-lock.json
 COPY package*.json ./
 
-# 更新npm到最新版本并安装所有依赖
-RUN npm install -g npm@latest && \
-    npm install
+# 仅安装生产依赖
+RUN npm ci --omit=dev
 
-# 复制源代码
-COPY . .
-
-# 创建上传目录
-RUN mkdir -p public/uploads
-
-# 构建应用并清理开发依赖
-RUN npm run build && \
-    npm ci --omit=dev && \
-    npm cache clean --force
+# 从builder阶段复制构建好的文件
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/config ./config
+COPY --from=builder /app/database ./database
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/src ./src
 
 # 创建非root用户
 RUN addgroup -g 1001 -S nodejs && \
