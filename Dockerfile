@@ -4,13 +4,18 @@ FROM node:20-alpine AS builder
 # 设置工作目录
 WORKDIR /app
 
-# 安装系统依赖
-RUN apk add --no-cache \
+# 配置Alpine镜像源为阿里云镜像（提高下载速度）
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
+
+# 更新包索引并安装系统依赖（分步骤安装以提高成功率）
+RUN apk update && \
+    apk add --no-cache --timeout=300 \
     build-base \
+    musl-dev && \
+    apk add --no-cache --timeout=300 \
     cairo-dev \
     jpeg-dev \
     pango-dev \
-    musl-dev \
     giflib-dev \
     pixman-dev \
     pangomm-dev \
@@ -20,11 +25,14 @@ RUN apk add --no-cache \
 # 复制package.json和package-lock.json
 COPY backend/package*.json ./
 
-# 安装所有依赖
-RUN npm install
+# 配置npm使用淘宝镜像源（提高下载速度）
+RUN npm config set registry https://registry.npmmirror.com
 
-# 复制源代码
-COPY . .
+# 安装所有依赖
+RUN npm install --production=false
+
+# 复制源代码（只复制backend目录内容）
+COPY backend/ .
 
 # 构建应用
 RUN npm run build
@@ -35,8 +43,12 @@ FROM node:20-alpine
 # 设置工作目录
 WORKDIR /app
 
-# 安装生产环境系统依赖
-RUN apk add --no-cache \
+# 配置Alpine镜像源为阿里云镜像
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
+
+# 安装生产环境系统依赖（分步骤安装）
+RUN apk update && \
+    apk add --no-cache --timeout=300 \
     cairo \
     jpeg \
     pango \

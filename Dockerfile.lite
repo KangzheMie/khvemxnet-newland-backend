@@ -1,0 +1,69 @@
+# ---- 轻量级构建版本 ----
+# 这是一个简化版的Dockerfile，减少了依赖包以提高构建成功率
+
+FROM node:20-alpine AS builder
+
+# 设置工作目录
+WORKDIR /app
+
+# 配置Alpine镜像源为阿里云镜像
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
+
+# 只安装必要的构建依赖
+RUN apk update && \
+    apk add --no-cache --timeout=300 \
+    build-base \
+    python3 \
+    make \
+    g++
+
+# 复制package.json和package-lock.json
+COPY backend/package*.json ./
+
+# 配置npm使用淘宝镜像源
+RUN npm config set registry https://registry.npmmirror.com
+
+# 安装依赖（跳过可选依赖以减少构建时间）
+RUN npm ci --only=production --no-optional
+
+# 复制源代码
+COPY backend/ .
+
+# ---- 生产环境 ----
+FROM node:20-alpine
+
+WORKDIR /app
+
+# 配置Alpine镜像源
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
+
+# 只安装运行时必要的依赖
+RUN apk update && \
+    apk add --no-cache --timeout=300 \
+    curl \
+    dumb-init
+
+# 从构建阶段复制文件
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/config ./config
+COPY --from=builder /app/database ./database
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/src ./src
+
+# 创建非root用户
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S strapi -u 1001
+
+# 设置文件权限
+RUN chown -R strapi:nodejs /app
+USER strapi
+
+EXPOSE 1337
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:1337/_health || exit 1
+
+# 使用dumb-init作为PID 1
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["npm", "start"]
