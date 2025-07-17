@@ -18,7 +18,7 @@ RUN apk add --no-cache \
     freetype-dev
 
 # 复制package.json和package-lock.json
-COPY package*.json ./
+COPY backend/package*.json ./
 
 # 安装所有依赖
 RUN npm install
