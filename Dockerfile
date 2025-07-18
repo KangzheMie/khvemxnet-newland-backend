@@ -35,6 +35,7 @@ RUN npm install --production=false
 COPY backend/ .
 
 # 构建应用
+ENV NODE_OPTIONS=--max-old-space-size=4096
 RUN npm run build
 
 # ---- Production Stage ----
