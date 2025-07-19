@@ -73,6 +73,12 @@ COPY --from=builder /app/database ./database
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/src ./src
 
+# 安装TypeScript以支持运行时编译TypeScript配置文件
+RUN npm install -g typescript
+
+# 或者简单地确保config目录中的TypeScript文件能被正确处理
+# Strapi 4.x+ 应该能够处理TypeScript配置文件
+
 # 创建非root用户
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S strapi -u 1001
