@@ -38,6 +38,14 @@ COPY backend/ .
 ENV NODE_OPTIONS=--max-old-space-size=4096
 RUN npm run build
 
+# 编译TypeScript配置文件为JavaScript
+RUN npx tsc config/admin.ts --outDir dist/config --module commonjs --target es2019 --esModuleInterop --skipLibCheck || true
+RUN npx tsc config/api.ts --outDir dist/config --module commonjs --target es2019 --esModuleInterop --skipLibCheck || true
+RUN npx tsc config/database.ts --outDir dist/config --module commonjs --target es2019 --esModuleInterop --skipLibCheck || true
+RUN npx tsc config/middlewares.ts --outDir dist/config --module commonjs --target es2019 --esModuleInterop --skipLibCheck || true
+RUN npx tsc config/plugins.ts --outDir dist/config --module commonjs --target es2019 --esModuleInterop --skipLibCheck || true
+RUN npx tsc config/server.ts --outDir dist/config --module commonjs --target es2019 --esModuleInterop --skipLibCheck || true
+
 # ---- Production Stage ----
 FROM node:20-alpine
 
@@ -68,16 +76,13 @@ COPY --from=builder /app/node_modules ./node_modules
 
 # 从builder阶段复制构建产物
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/config ./config
+# 复制编译后的JavaScript配置文件
+COPY --from=builder /app/dist/config ./config
 COPY --from=builder /app/database ./database
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/src ./src
 
-# 安装TypeScript以支持运行时编译TypeScript配置文件
-RUN npm install -g typescript
-
-# 或者简单地确保config目录中的TypeScript文件能被正确处理
-# Strapi 4.x+ 应该能够处理TypeScript配置文件
+# Strapi 5.x需要JavaScript配置文件，已在构建阶段编译
 
 # 创建非root用户
 RUN addgroup -g 1001 -S nodejs && \
