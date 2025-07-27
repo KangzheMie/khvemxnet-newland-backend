@@ -20,7 +20,7 @@ export default [
     config: {
       enabled: true,
       headers: '*',
-      origin: ['http://localhost:80', 'http://localhost:3000', 'http://frontend:80']
+      origin: ['http://localhost', 'http://frontend', 'http://mie-linux','http://newland.khvemx.work','https://newland.khvemx.work']
     }
   },
   'strapi::poweredBy',
