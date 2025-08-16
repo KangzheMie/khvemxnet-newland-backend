@@ -1,0 +1,24 @@
+# 博客同步工具依赖包
+# Blog Sync Tool Dependencies
+
+# 数据库相关
+sqlalchemy>=2.0.0
+
+# YAML解析（用于frontmatter）
+PyYAML>=6.0
+
+# 文件处理和路径操作
+pathlib2>=2.3.0; python_version < '3.4'
+
+# 日志和调试
+coloredlogs>=15.0
+
+# 可选：进度条显示
+tqdm>=4.60.0
+
+# 可选：更好的错误处理
+rich>=10.0.0
+
+# 开发和测试依赖（可选）
+# pytest>=6.0.0
+# pytest-cov>=2.10.0

@@ -1,1 +1,4 @@
-*.db
+data/*.db
+
+blog/
+!blog/.gitkeep
